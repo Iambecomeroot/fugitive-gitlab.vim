@@ -91,7 +91,6 @@ function! gitlab#snippet#write(bang, line1, line2, ...) abort
 
     let title = get(options, 'title', expand('%'))
     let desc  = get(options, 'description', 'fugitive-gitlab generated snippet')
-    let visibility = get(options, 'visibility', get(g:, 'gitlab_default_visibility', 'public'))
     let name  = get(options, 'name', expand('%'))
     if empty(title)
         let title = 'empty.txt'
@@ -100,8 +99,7 @@ function! gitlab#snippet#write(bang, line1, line2, ...) abort
     let data = {
         \'title': title,
         \'file_name': name,
-        \'description': desc,
-        \'visibility': visibility
+        \'description': desc
     \}
 
     if type == 'project'
@@ -109,9 +107,16 @@ function! gitlab#snippet#write(bang, line1, line2, ...) abort
             call s:error('Not a git repository, cannot work out project')
             return
         endif
+        " project must have visibility set
+        let data['visibility'] = get(options, 'visibility', get(g:, 'gitlab_default_visibility', 'public'))
         let data['code'] = text
         let path = '/projects/' . remote.project . '/snippets'
     else
+        " user snippets don't need to set visibility
+        let visibility = get(options, 'visibility', get(g:, 'gitlab_default_visibility'))
+        if !empty(visibility)
+            let data['visibility'] = visibility
+        endif
         let data['content'] = text
         let path = '/snippets'
     endif
