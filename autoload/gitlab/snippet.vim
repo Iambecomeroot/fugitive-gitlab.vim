@@ -91,20 +91,17 @@ function! gitlab#snippet#write(bang, line1, line2, ...) abort
 
     let title = get(options, 'title', expand('%'))
     let desc  = get(options, 'description', 'fugitive-gitlab generated snippet')
+    let visibility = get(options, 'visibility', get(g:, 'gitlab_default_visibility', 'public'))
     let name  = get(options, 'name', expand('%'))
     if empty(title)
         let title = 'empty.txt'
     endif
 
-    " let file_name = s:parse_string_arg(joinedargs, 'f', expand('%'))
-    " let descr = s:parse_string_arg(joinedargs, 'd', 'fugitive-gitlab generated snippet')
-    " let file_name = expand('%')
-    " let descr = 'fugitive-gitlab generated snippet'
-
     let data = {
         \'title': title,
         \'file_name': name,
-        \'description': desc
+        \'description': desc,
+        \'visibility': visibility
     \}
 
     if type == 'project'
@@ -113,7 +110,6 @@ function! gitlab#snippet#write(bang, line1, line2, ...) abort
             return
         endif
         let data['code'] = text
-        let data['visibility'] = 'private'
         let path = '/projects/' . remote.project . '/snippets'
     else
         let data['content'] = text
@@ -121,7 +117,11 @@ function! gitlab#snippet#write(bang, line1, line2, ...) abort
     endif
 
     echon 'writing snippet ... '
-    call s:set_snippet(remote.root, path, data, 'POST')
+    try
+        call s:set_snippet(remote.root, path, data, 'POST')
+    catch /^gitlab:/
+        call s:error(v:errmsg)
+    endtry
 endfunction
 
 "[{"id":1700538,"title":"test","file_name":"test.md","description":"test project snippet","author":{"id":1672441,"name":"Steven Humphrey","username":"shumphrey","state":"active","avatar_url":"https://secure.gravatar.com/avatar/a5a6c4ee136cf136c6c379116a0caaeb?s=80\u0026d=identicon","web_url":"https://gitlab.com/shumphrey"},"updated_at":"2018-02-23T19:37:07.150Z","created_at":"2018-02-23T19:37:07.150Z","project_id":5360561,"web_url":"https://gitlab.com/shumphrey/fugitive-gitlab.vim/snippets/1700538"}]
